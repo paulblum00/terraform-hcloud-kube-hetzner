@@ -69,7 +69,7 @@ resource "hcloud_load_balancer_network" "control_plane" {
   subnet_id               = hcloud_network_subnet.control_plane.*.id[0]
   enable_public_interface = var.control_plane_lb_enable_public_interface
   # Use -2 to get the last usable IP in the subnet
-  ip                      = cidrhost(hcloud_network_subnet.control_plane.*.ip_range[0], -2)
+  ip = cidrhost(hcloud_network_subnet.control_plane.*.ip_range[0], -2)
 
   lifecycle {
     # Removed 'ip' from ignore_changes to allow proper management with hcloud provider 1.56+
