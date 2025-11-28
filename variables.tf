@@ -102,6 +102,20 @@ variable "network_ipv4_cidr" {
   default     = "10.0.0.0/8"
 }
 
+variable "subnet_size" {
+  description = "The bit size of all created subnets."
+  type        = number
+  default     = 8
+  validation {
+    condition     = var.subnet_size <= 32 - split("/", var.network_ipv4_cidr)[1]
+    error_message = "Subnets must fit inside of the network. The means, the subnet_size must be smaller than 32 minus the prefix of the network_ipv4_cidr."
+  }
+  validation {
+    condition     = pow(2, 32 - var.subnet_size - split("/", var.network_ipv4_cidr)[1]) >= length(var.control_plane_nodepools) + length(var.agent_nodepools) + (var.nat_router == null ? 0 : 1)
+    error_message = "Subnet size must be small enough so that a subnet for each agent pool, each control plane pool and (if enabled) the nat router can be created in the network."
+  }
+}
+
 variable "cluster_ipv4_cidr" {
   description = "Internal Pod CIDR, used for the controller and currently for calico/cilium."
   type        = string
@@ -140,11 +154,11 @@ variable "nat_router" {
 variable "nat_router_subnet_index" {
   type        = number
   default     = 200
-  description = "Subnet index (0-255) for NAT router. Default 200 is safe for most deployments. Must not conflict with control plane (counting down from 255) or agent pools (counting up from 0)."
+  description = "Subnet index for NAT router. Default 200 is safe for most deployments. Must not conflict with control plane (counting down from 255) or agent pools (counting up from 0)."
 
   validation {
-    condition     = var.nat_router_subnet_index >= 0 && var.nat_router_subnet_index <= 255
-    error_message = "NAT router subnet index must be between 0 and 255."
+    condition     = var.nat_router_subnet_index >= 0 && var.nat_router_subnet_index < pow(2, 32 - var.subnet_size - split("/", var.network_ipv4_cidr)[1])
+    error_message = "NAT router subnet index must be a valid subnet index."
   }
 }
 
