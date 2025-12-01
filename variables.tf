@@ -102,17 +102,21 @@ variable "network_ipv4_cidr" {
   default     = "10.0.0.0/8"
 }
 
-variable "subnet_size" {
-  description = "The bit size of all created subnets."
+variable "subnet_amount" {
+  description = "The amount of subnets into which the network will be split. Must be a power of 2."
   type        = number
-  default     = 8
+  default     = 256
   validation {
-    condition     = var.subnet_size <= 32 - split("/", var.network_ipv4_cidr)[1]
-    error_message = "Subnets must fit inside of the network. The means, the subnet_size must be smaller than 32 minus the prefix of the network_ipv4_cidr."
+    condition     = floor(log(var.subnet_amount, 2)) == log(var.subnet_amount, 2)
+    error_message = "Subnet amount must be a power of 2."
   }
   validation {
-    condition     = pow(2, 32 - var.subnet_size - split("/", var.network_ipv4_cidr)[1]) >= length(var.control_plane_nodepools) + length(var.agent_nodepools) + (var.nat_router == null ? 0 : 1)
-    error_message = "Subnet size must be small enough so that a subnet for each agent pool, each control plane pool and (if enabled) the nat router can be created in the network."
+    condition     = pow(2, split("/", var.network_ipv4_cidr)[1]) >= var.subnet_amount
+    error_message = "The given network ipv4 cidr has less available IP addresses than the amount of subnet to be created."
+  }
+  validation {
+    condition     = var.subnet_amount >= length(var.control_plane_nodepools) + length(var.agent_nodepools) + (var.nat_router == null ? 0 : 1)
+    error_message = "Subnet amount must be large enough so that a subnet for each agent pool, each control plane pool and (if enabled) the nat router can be created in the network."
   }
 }
 
@@ -157,8 +161,8 @@ variable "nat_router_subnet_index" {
   description = "Subnet index for NAT router. Default 200 is safe for most deployments. Must not conflict with control plane (counting down from 255) or agent pools (counting up from 0)."
 
   validation {
-    condition     = var.nat_router_subnet_index >= 0 && var.nat_router_subnet_index < pow(2, 32 - var.subnet_size - split("/", var.network_ipv4_cidr)[1])
-    error_message = "NAT router subnet index must be a valid subnet index."
+    condition     = var.nat_router_subnet_index >= 0 && var.nat_router_subnet_index < var.subnet_amount
+    error_message = "NAT router subnet index must be between 0 and subnet_amount."
   }
 }
 
