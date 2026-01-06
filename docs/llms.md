@@ -381,7 +381,9 @@ The subsequent sections on `control_plane_nodepools` and `agent_nodepools` are e
       * Constraints: Lowercase, no special characters except dashes (`-`).
       * Used for naming resources in Hetzner and for Kubernetes node labels/names.
     * **`server_type` (String, Obligatory):**
-      * Hetzner server type (e.g., `cx23`, `cx33` for x86; `cax11`, `cax21` for ARM).
+      * Hetzner server type:
+        * x86: e.g. `cx23` (2 vCPU, 4GB RAM, 40GB SSD), `cx33` (4 vCPU, 8GB RAM, 80GB SSD), `cx43` (8 vCPU, 16GB RAM, 160GB SSD).
+        * ARM: e.g. `cax11` (2 vCPU, 4GB RAM, 40GB SSD), `cax21` (4 vCPU, 8GB RAM, 80GB SSD).
       * Minimum for control plane: `cx23` is often cited. More demanding setups (e.g., with Cilium CNI, Rancher) might require more RAM (e.g., `cx33`/`cx43` or `cax21`/`cax31`).
     * **`location` (String, Obligatory):**
       * Hetzner location (e.g., `fsn1`, `nbg1`, `hel1`, `ash`).
@@ -2115,7 +2117,7 @@ Locked and loaded! Let's continue the detailed exploration.
   # As for the number of replicas, by default it is set to the number of control plane nodes.
   # You can customized all of the above by adding a rancher_values variable see at the end of this file in the advanced section.
   # After the cluster is deployed, you can always use HelmChartConfig definition to tweak the configuration.
-  # IMPORTANT: Rancher's install is quite memory intensive, you will require at least 4GB if RAM, meaning cx33 server type (for your control plane).
+  # IMPORTANT: Rancher's install is quite memory intensive, you will require at least 4GB if RAM, meaning cx23 server type (for your control plane).
   # ALSO, in order for Rancher to successfully deploy, you have to set the "rancher_hostname".
   # enable_rancher = true
 ```
@@ -2130,7 +2132,7 @@ Locked and loaded! Let's continue the detailed exploration.
     * **SSL Configuration:** Rancher offers options for SSL: Rancher-generated self-signed certs (default), Let's Encrypt, or bringing your own certs. The comment suggests the default self-signed cert is easiest if you put a proxy like Cloudflare (with its own valid cert) in front of Rancher.
     * **Replicas:** Rancher deployment replicas default to the number of control plane nodes for HA.
     * **Customization:** Advanced customization via `rancher_values` block (later).
-    * **Resource Requirements (IMPORTANT):** Rancher is resource-intensive. Control plane nodes need significant RAM (at least 4GB, e.g., Hetzner `cx33`/`cx43` or higher). Insufficient resources will lead to installation failures or instability.
+    * **Resource Requirements (IMPORTANT):** Rancher is resource-intensive. Control plane nodes need significant RAM (at least 4GB, e.g., Hetzner `cx23`/`cx33` or higher). Insufficient resources will lead to installation failures or instability.
     * **`rancher_hostname` (REQUIRED):** You *must* set `rancher_hostname` if `enable_rancher = true`.
 
 ```terraform
