@@ -121,9 +121,9 @@ module "kube-hetzner" {
 
   control_plane_nodepools = [
     {
-      name        = "control-plane-fsn1",
+      name        = "control-plane-nbg1",
       server_type = "cx23",
-      location    = "fsn1",
+      location    = "nbg1",
       labels      = [],
       taints      = [],
       count       = 1
@@ -189,7 +189,7 @@ module "kube-hetzner" {
     {
       name        = "agent-small",
       server_type = "cx23",
-      location    = "fsn1",
+      location    = "nbg1",
       labels      = [],
       taints      = [],
       count       = 1
@@ -220,7 +220,7 @@ module "kube-hetzner" {
     {
       name        = "storage",
       server_type = "cx33",
-      location    = "fsn1",
+      location    = "nbg1",
       # Fully optional, just a demo.
       labels      = [
         "node.kubernetes.io/server-usage=storage"
@@ -243,7 +243,7 @@ module "kube-hetzner" {
     {
       name        = "egress",
       server_type = "cx23",
-      location    = "fsn1",
+      location    = "nbg1",
       labels = [
         "node.kubernetes.io/role=egress"
       ],
@@ -260,7 +260,7 @@ module "kube-hetzner" {
     {
       name        = "agent-arm-small",
       server_type = "cax11",
-      location    = "fsn1",
+      location    = "nbg1",
       labels      = [],
       taints      = [],
       count       = 1
@@ -271,12 +271,12 @@ module "kube-hetzner" {
     {
       name        = "agent-arm-medium",
       server_type = "cax21",
-      location    = "fsn1",
+      location    = "nbg1",
       labels      = [],
       taints      = [],
       nodes = {
         "1" : {
-          location                  = "nbg1"
+          location                  = "fsn1"
           labels = [
             "testing-labels=a1",
           ]
@@ -313,7 +313,7 @@ module "kube-hetzner" {
 
   # * LB location and type, the latter will depend on how much load you want it to handle, see https://www.hetzner.com/cloud/load-balancer
   load_balancer_type     = "lb11"
-  load_balancer_location = "fsn1"
+  load_balancer_location = "nbg1"
 
   # Disable IPv6 for the load balancer, the default is false.
   # load_balancer_disable_ipv6 = true
@@ -348,7 +348,7 @@ module "kube-hetzner" {
   #
   # nat_router = {
   #   server_type = "cax21"
-  #   location    = "fsn1"
+  #   location    = "nbg1"
   #   enable_sudo = false # optional, default to false. Set to true to add nat-router user to the sudo'ers. Note that ssh as root is disabled.
   #   labels      = {} # optionally add labels.
   # }
@@ -371,7 +371,7 @@ module "kube-hetzner" {
   #  {
   #    name        = "autoscaled-small"
   #    server_type = "cx33"
-  #    location    = "fsn1"
+  #    location    = "nbg1"
   #    # Add the arg --enforce-node-group-min-size=true in the cluster_autoscaler_extra_args option below if you want min_nodes to be effective
   #    min_nodes   = 0
   #    max_nodes   = 5
@@ -1053,7 +1053,7 @@ args:
   webhook-secure-port: "0"
 env:
   HCLOUD_LOAD_BALANCERS_LOCATION:
-    value: "fsn1"
+    value: "nbg1"
   HCLOUD_LOAD_BALANCERS_USE_PRIVATE_IP:
     value: "true"
   HCLOUD_LOAD_BALANCERS_ENABLED:

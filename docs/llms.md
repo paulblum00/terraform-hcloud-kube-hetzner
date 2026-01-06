@@ -198,7 +198,7 @@ module "kube-hetzner" {
   * **Default (in module, not shown here):** Likely "eu-central".
   * **Purpose:** Specifies the broad geographical region for your Hetzner Cloud private network. All servers and load balancers within the same private network must reside in locations that belong to this network region.
   * **Hetzner Regions:**
-    * `eu-central`: Encompasses European locations like Falkenstein (`fsn1`), Nuremberg (`nbg1`), Helsinki (`hel1`).
+    * `eu-central`: Encompasses European locations like Falkenstein (`fsn1` - currently unavailable due to high demand), Nuremberg (`nbg1`), Helsinki (`hel1`).
     * `us-east`: Encompasses Ashburn, VA (`ash`).
     * `us-west`: Encompasses Hillsboro, OR (`hil`). (Check if supported by module if you intend to use it)
   * **Constraint:** The `location` specified in your `control_plane_nodepools` and `agent_nodepools` *must* be compatible with this `network_region`. You cannot have a server in `fsn1` (Europe) in a network defined for `us-east`.
@@ -325,9 +325,9 @@ The subsequent sections on `control_plane_nodepools` and `agent_nodepools` are e
 
   control_plane_nodepools = [
     {
-      name        = "control-plane-fsn1",
+      name        = "control-plane-nbg1",
       server_type = "cx23",
-      location    = "fsn1",
+      location    = "nbg1",
       labels      = [],
       taints      = [],
       count       = 1
@@ -435,7 +435,7 @@ The example shows three control plane nodepools, each with one node, in differen
     {
       name        = "agent-small",
       server_type = "cx23",
-      location    = "fsn1",
+      location    = "nbg1",
       labels      = [],
       taints      = [],
       count       = 1
@@ -458,7 +458,7 @@ The example shows three control plane nodepools, each with one node, in differen
     {
       name        = "storage",
       server_type = "cx33",
-      location    = "fsn1",
+      location    = "nbg1",
       labels      = [
         "node.kubernetes.io/server-usage=storage" # Example label
       ],
@@ -476,7 +476,7 @@ The example shows three control plane nodepools, each with one node, in differen
     {
       name        = "egress",
       server_type = "cx23",
-      location    = "fsn1",
+      location    = "nbg1",
       labels = [
         "node.kubernetes.io/role=egress"
       ],
@@ -492,7 +492,7 @@ The example shows three control plane nodepools, each with one node, in differen
     {
       name        = "agent-arm-small",
       server_type = "cax11", # ARM server type
-      location    = "fsn1",
+      location    = "nbg1",
       labels      = [],
       taints      = [],
       count       = 1
@@ -503,12 +503,12 @@ The example shows three control plane nodepools, each with one node, in differen
     {
       name        = "agent-arm-medium",
       server_type = "cax21", # Default server_type for this pool
-      location    = "fsn1",  # Default location
+      location    = "nbg1",  # Default location
       labels      = [],
       taints      = [],
       nodes = { # Overrides 'count' and allows per-node customization
         "1" : { # Node identified as "1" within this pool
-          location = "nbg1" # Override location for this specific node
+          location = "fsn1" # Override location for this specific node
           labels = [
             "testing-labels=a1",
           ]
@@ -553,9 +553,9 @@ The example shows three control plane nodepools, each with one node, in differen
         * Each value in the `nodes` map is another map specifying the attributes to override for that particular node.
       * **Example Breakdown (`agent-arm-medium`):**
         * Default `server_type`: `cax21`
-        * Default `location`: `fsn1`
-        * Node `"1"`: Overrides `location` to `nbg1` and adds specific `labels`. It will use the default `cax21` server type.
-        * Node `"20"`: Uses default `location` (`fsn1`) and `server_type` (`cax21`) but has its own specific `labels`.
+        * Default `location`: `nbg1`
+        * Node `"1"`: Overrides `location` to `fsn1` and adds specific `labels`. It will use the default `cax21` server type.
+        * Node `"20"`: Uses default `location` (`nbg1`) and `server_type` (`cax21`) but has its own specific `labels`.
       * **Benefit:** Useful when you need slight variations for a few nodes within a larger, mostly homogeneous pool, without creating many separate small nodepool definitions.
 
 ---
@@ -618,7 +618,7 @@ The example shows three control plane nodepools, each with one node, in differen
 ```terraform
   # * LB location and type, the latter will depend on how much load you want it to handle, see https://www.hetzner.com/cloud/load-balancer
   load_balancer_type     = "lb11"
-  load_balancer_location = "fsn1"
+  load_balancer_location = "nbg1"
 
   # Disable IPv6 for the load balancer, the default is false.
   # load_balancer_disable_ipv6 = true
@@ -705,7 +705,7 @@ The example shows three control plane nodepools, each with one node, in differen
   #  {
   #    name        = "autoscaled-small"
   #    server_type = "cx33"
-  #    location    = "fsn1"
+  #    location    = "nbg1"
   #    min_nodes   = 0
   #    max_nodes   = 5
   #    labels      = { # Note: This is a map, not a list of strings like other labels
@@ -1498,8 +1498,8 @@ Excellent! Let's continue our meticulous dissection.
 * **`use_cluster_name_in_node_name` (Boolean, Optional):**
   * **Default:** `true`.
   * **Purpose:** Controls the naming convention for the Hetzner server instances (and thus Kubernetes node names).
-    * `true`: Node names will be prefixed with the `cluster_name`, e.g., `k3s-cp-fsn1-1`, `mycluster-agent-small-1`.
-    * `false`: Node names will likely just use the nodepool name and an index, e.g., `cp-fsn1-1`, `agent-small-1`.
+    * `true`: Node names will be prefixed with the `cluster_name`, e.g., `k3s-cp-nbg1-1`, `mycluster-agent-small-1`.
+    * `false`: Node names will likely just use the nodepool name and an index, e.g., `cp-nbg1-1`, `agent-small-1`.
   * **Benefit of `true`:** Helps differentiate nodes if you manage multiple clusters within the same Hetzner project.
 
 ---
@@ -2692,7 +2692,7 @@ The following variables have been added to the `kube-hetzner` module since the i
   # It does however also introduce a single point of failure, so if you need high-availability on your egress, you should consider other configurations.
   # nat_router = {
   #   server_type = "cx33"
-  #   location = "fsn1"
+  #   location = "nbg1"
   # }
 ```
 
