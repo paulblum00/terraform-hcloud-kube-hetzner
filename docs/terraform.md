@@ -214,7 +214,7 @@
 | <a name="input_load_balancer_health_check_interval"></a> [load\_balancer\_health\_check\_interval](#input\_load\_balancer\_health\_check\_interval) | Specifies the interval at which a health check is performed. Minimum is 3s. | `string` | `"15s"` | no |
 | <a name="input_load_balancer_health_check_retries"></a> [load\_balancer\_health\_check\_retries](#input\_load\_balancer\_health\_check\_retries) | Specifies the number of times a health check is retried before a target is marked as unhealthy. | `number` | `3` | no |
 | <a name="input_load_balancer_health_check_timeout"></a> [load\_balancer\_health\_check\_timeout](#input\_load\_balancer\_health\_check\_timeout) | Specifies the timeout of a single health check. Must not be greater than the health check interval. Minimum is 1s. | `string` | `"10s"` | no |
-| <a name="input_load_balancer_location"></a> [load\_balancer\_location](#input\_load\_balancer\_location) | Default load balancer location. | `string` | `"fsn1"` | no |
+| <a name="input_load_balancer_location"></a> [load\_balancer\_location](#input\_load\_balancer\_location) | Default load balancer location. | `string` | `"nbg1"` | no |
 | <a name="input_load_balancer_type"></a> [load\_balancer\_type](#input\_load\_balancer\_type) | Default load balancer server type. | `string` | `"lb11"` | no |
 | <a name="input_longhorn_fstype"></a> [longhorn\_fstype](#input\_longhorn\_fstype) | The longhorn fstype. | `string` | `"ext4"` | no |
 | <a name="input_longhorn_helmchart_bootstrap"></a> [longhorn\_helmchart\_bootstrap](#input\_longhorn\_helmchart\_bootstrap) | Whether the HelmChart longhorn shall be run on control-plane nodes. | `bool` | `false` | no |

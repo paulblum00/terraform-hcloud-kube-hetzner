@@ -98,7 +98,7 @@ module "kube-hetzner" {
   # For instance, one is ok (non-HA), two is not ok, and three is ok (becomes HA). It does not matter if they are in the same nodepool or not! So they can be in different locations and of various types.
 
   # Of course, you can choose any number of nodepools you want, with the location you want. The only constraint on the location is that you need to stay in the same network region, Europe, or the US.
-  # For the server type, the minimum instance supported is cx22. The cax11 provides even better value for money if your applications are compatible with arm64; see https://www.hetzner.com/cloud.
+  # For the server type, the minimum instance supported is cx23. If you want to use arm64 use cax11; see https://www.hetzner.com/cloud.
 
   # IMPORTANT: Before you create your cluster, you can do anything you want with the nodepools, but you need at least one of each, control plane and agent.
   # Once the cluster is up and running, you can change nodepool count and even set it to 0 (in the case of the first control-plane nodepool, the minimum is 1).
@@ -121,9 +121,9 @@ module "kube-hetzner" {
 
   control_plane_nodepools = [
     {
-      name        = "control-plane-fsn1",
-      server_type = "cx22",
-      location    = "fsn1",
+      name        = "control-plane-nbg1",
+      server_type = "cx23",
+      location    = "nbg1",
       labels      = [],
       taints      = [],
       count       = 1
@@ -144,9 +144,9 @@ module "kube-hetzner" {
       # disable_ipv6 = true
     },
     {
-      name        = "control-plane-nbg1",
-      server_type = "cx22",
-      location    = "nbg1",
+      name        = "control-plane-fsn1",
+      server_type = "cx23",
+      location    = "fsn1",
       labels      = [],
       taints      = [],
       count       = 1
@@ -165,7 +165,7 @@ module "kube-hetzner" {
     },
     {
       name        = "control-plane-hel1",
-      server_type = "cx22",
+      server_type = "cx23",
       location    = "hel1",
       labels      = [],
       taints      = [],
@@ -188,8 +188,8 @@ module "kube-hetzner" {
   agent_nodepools = [
     {
       name        = "agent-small",
-      server_type = "cx22",
-      location    = "fsn1",
+      server_type = "cx23",
+      location    = "nbg1",
       labels      = [],
       taints      = [],
       count       = 1
@@ -205,7 +205,7 @@ module "kube-hetzner" {
     },
     {
       name        = "agent-large",
-      server_type = "cx32",
+      server_type = "cx33",
       location    = "nbg1",
       labels      = [],
       taints      = [],
@@ -219,8 +219,8 @@ module "kube-hetzner" {
     },
     {
       name        = "storage",
-      server_type = "cx32",
-      location    = "fsn1",
+      server_type = "cx33",
+      location    = "nbg1",
       # Fully optional, just a demo.
       labels      = [
         "node.kubernetes.io/server-usage=storage"
@@ -242,8 +242,8 @@ module "kube-hetzner" {
     # See the https://github.com/kube-hetzner/terraform-hcloud-kube-hetzner#examples for an example use case.
     {
       name        = "egress",
-      server_type = "cx22",
-      location    = "fsn1",
+      server_type = "cx23",
+      location    = "nbg1",
       labels = [
         "node.kubernetes.io/role=egress"
       ],
@@ -260,7 +260,7 @@ module "kube-hetzner" {
     {
       name        = "agent-arm-small",
       server_type = "cax11",
-      location    = "fsn1",
+      location    = "nbg1",
       labels      = [],
       taints      = [],
       count       = 1
@@ -271,12 +271,12 @@ module "kube-hetzner" {
     {
       name        = "agent-arm-medium",
       server_type = "cax21",
-      location    = "fsn1",
+      location    = "nbg1",
       labels      = [],
       taints      = [],
       nodes = {
         "1" : {
-          location                  = "nbg1"
+          location                  = "fsn1"
           labels = [
             "testing-labels=a1",
           ]
@@ -313,7 +313,7 @@ module "kube-hetzner" {
 
   # * LB location and type, the latter will depend on how much load you want it to handle, see https://www.hetzner.com/cloud/load-balancer
   load_balancer_type     = "lb11"
-  load_balancer_location = "fsn1"
+  load_balancer_location = "nbg1"
 
   # Disable IPv6 for the load balancer, the default is false.
   # load_balancer_disable_ipv6 = true
@@ -348,7 +348,7 @@ module "kube-hetzner" {
   #
   # nat_router = {
   #   server_type = "cax21"
-  #   location    = "fsn1"
+  #   location    = "nbg1"
   #   enable_sudo = false # optional, default to false. Set to true to add nat-router user to the sudo'ers. Note that ssh as root is disabled.
   #   labels      = {} # optionally add labels.
   # }
@@ -370,8 +370,8 @@ module "kube-hetzner" {
   # autoscaler_nodepools = [
   #  {
   #    name        = "autoscaled-small"
-  #    server_type = "cx32"
-  #    location    = "fsn1"
+  #    server_type = "cx33"
+  #    location    = "nbg1"
   #    # Add the arg --enforce-node-group-min-size=true in the cluster_autoscaler_extra_args option below if you want min_nodes to be effective
   #    min_nodes   = 0
   #    max_nodes   = 5
@@ -935,7 +935,7 @@ module "kube-hetzner" {
   # As for the number of replicas, by default it is set to the number of control plane nodes.
   # You can customized all of the above by adding a rancher_values variable see at the end of this file in the advanced section.
   # After the cluster is deployed, you can always use HelmChartConfig definition to tweak the configuration.
-  # IMPORTANT: Rancher's install is quite memory intensive, you will require at least 4GB if RAM, meaning cx21 server type (for your control plane).
+  # IMPORTANT: Rancher's install is quite memory intensive, you will require at least 4GB if RAM, meaning cx23 server type (for your control plane).
   # ALSO, in order for Rancher to successfully deploy, you have to set the "rancher_hostname".
   # enable_rancher = true
 
@@ -1053,7 +1053,7 @@ args:
   webhook-secure-port: "0"
 env:
   HCLOUD_LOAD_BALANCERS_LOCATION:
-    value: "fsn1"
+    value: "nbg1"
   HCLOUD_LOAD_BALANCERS_USE_PRIVATE_IP:
     value: "true"
   HCLOUD_LOAD_BALANCERS_ENABLED:

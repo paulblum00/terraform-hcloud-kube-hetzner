@@ -152,7 +152,7 @@ variable "nat_router_subnet_index" {
 variable "load_balancer_location" {
   description = "Default load balancer location."
   type        = string
-  default     = "fsn1"
+  default     = "nbg1"
 }
 
 variable "load_balancer_type" {
