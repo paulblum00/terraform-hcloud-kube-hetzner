@@ -235,7 +235,7 @@ locals {
         server_type : nodepool_obj.server_type,
         location : nodepool_obj.location,
         labels : concat(local.default_control_plane_labels, nodepool_obj.swap_size != "" ? local.swap_node_label : [], nodepool_obj.labels),
-        taints : concat(local.default_control_plane_taints, nodepool_obj.taints),
+        taints : compact(concat(local.default_control_plane_taints, nodepool_obj.taints)),
         kubelet_args : nodepool_obj.kubelet_args,
         backups : nodepool_obj.backups,
         swap_size : nodepool_obj.swap_size,
@@ -263,7 +263,7 @@ locals {
         floating_ip_rdns : lookup(nodepool_obj, "floating_ip_rdns", false),
         location : nodepool_obj.location,
         labels : concat(local.default_agent_labels, nodepool_obj.swap_size != "" ? local.swap_node_label : [], nodepool_obj.labels),
-        taints : concat(local.default_agent_taints, nodepool_obj.taints),
+        taints : compact(concat(local.default_agent_taints, nodepool_obj.taints)),
         kubelet_args : nodepool_obj.kubelet_args,
         backups : lookup(nodepool_obj, "backups", false),
         swap_size : nodepool_obj.swap_size,
@@ -292,7 +292,7 @@ locals {
           floating_ip_rdns : lookup(nodepool_obj, "floating_ip_rdns", false),
           location : nodepool_obj.location,
           labels : concat(local.default_agent_labels, nodepool_obj.swap_size != "" ? local.swap_node_label : [], nodepool_obj.labels),
-          taints : concat(local.default_agent_taints, nodepool_obj.taints),
+          taints : compact(concat(local.default_agent_taints, nodepool_obj.taints)),
           kubelet_args : nodepool_obj.kubelet_args,
           backups : lookup(nodepool_obj, "backups", false),
           swap_size : nodepool_obj.swap_size,
@@ -308,7 +308,7 @@ locals {
         { for key, value in node_obj : key => value if value != null },
         {
           labels : concat(local.default_agent_labels, nodepool_obj.swap_size != "" ? local.swap_node_label : [], nodepool_obj.labels, coalesce(node_obj.labels, [])),
-          taints : concat(local.default_agent_taints, nodepool_obj.taints, coalesce(node_obj.taints, [])),
+          taints : compact(concat(local.default_agent_taints, nodepool_obj.taints, coalesce(node_obj.taints, []))),
         },
         (
           node_obj.append_index_to_node_name ? { node_name_suffix : "-${floor(tonumber(node_key))}" } : {}
@@ -1044,45 +1044,49 @@ cloudinit_write_files_common = <<EOT
   content: |
     #!/bin/bash
     set -euo pipefail
+    sleep 8
 
-    sleep 11
+    myinit() {
+      # wait for a bit
+      sleep 3
 
-    # Somehow sometimes on private-ip only setups, the 
-    # interface may already be correctly names, and this
-    # block should be skipped.
-    if ! ip link show eth1 >/dev/null 2>&1; then
-      # Find the private network interface by name, falling back to original logic.
-      # The output of 'ip link show' is stored to avoid multiple calls.
-      # Use '|| true' to prevent grep from causing script failure when no matches found
-      IP_LINK_NO_FLANNEL=$(ip link show | grep -v 'flannel' || true)
+      # Somehow sometimes on private-ip only setups, the
+      # interface may already be correctly named, and this
+      # block should be skipped.
+      if ! ip link show eth1 >/dev/null 2>&1; then
+        # Find the private network interface by name, falling back to original logic.
+        # The output of 'ip link show' is stored to avoid multiple calls.
+        # Use '|| true' to prevent grep from causing script failure when no matches found
+        IP_LINK_NO_FLANNEL=$(ip link show | grep -v 'flannel' || true)
 
-      # Try to find an interface with a predictable name, e.g., enp1s0
-      # Anchor pattern to second field to avoid false matches
-      INTERFACE=$(awk '$2 ~ /^enp[0-9]+s[0-9]+:$/{sub(/:/,"",$2); print $2; exit}' <<< "$IP_LINK_NO_FLANNEL")
+        # Try to find an interface with a predictable name, e.g., enp1s0
+        # Anchor pattern to second field to avoid false matches
+        INTERFACE=$(awk '$2 ~ /^enp[0-9]+s[0-9]+:$/{sub(/:/,"",$2); print $2; exit}' <<< "$IP_LINK_NO_FLANNEL")
 
-      # If no predictable name is found, use original logic as fallback
-      if [ -z "$INTERFACE" ]; then
-        INTERFACE=$(awk '/^3:/{p=$2} /^2:/{s=$2} END{iface=p?p:s; sub(/:/,"",iface); print iface}' <<< "$IP_LINK_NO_FLANNEL")
+        # If no predictable name is found, use original logic as fallback
+        if [ -z "$INTERFACE" ]; then
+          INTERFACE=$(awk '/^3:/{p=$2} /^2:/{s=$2} END{iface=p?p:s; sub(/:/,"",iface); print iface}' <<< "$IP_LINK_NO_FLANNEL")
+        fi
+
+        # Ensure an interface was found
+        if [ -z "$INTERFACE" ]; then
+          echo "ERROR: Failed to detect network interface for renaming to eth1" >&2
+          echo "Available interfaces:" >&2
+          echo "$IP_LINK_NO_FLANNEL" >&2
+          return 1
+        fi
+
+        MAC=$(cat "/sys/class/net/$INTERFACE/address") || return 1
+
+        echo "SUBSYSTEM==\"net\", ACTION==\"add\", DRIVERS==\"?*\", ATTR{address}==\"$MAC\", NAME=\"eth1\"" > /etc/udev/rules.d/70-persistent-net.rules
+
+        ip link set "$INTERFACE" down
+        ip link set "$INTERFACE" name eth1
+        ip link set eth1 up
       fi
 
-      # Ensure an interface was found
-      if [ -z "$INTERFACE" ]; then
-        echo "ERROR: Failed to detect network interface for renaming to eth1" >&2
-        echo "Available interfaces:" >&2
-        echo "$IP_LINK_NO_FLANNEL" >&2
-        exit 1
-      fi
-
-      MAC=$(cat "/sys/class/net/$INTERFACE/address")
-
-      cat <<EOF > /etc/udev/rules.d/70-persistent-net.rules
-      SUBSYSTEM=="net", ACTION=="add", DRIVERS=="?*", ATTR{address}=="$MAC", NAME="eth1"
-    EOF
-
-      ip link set $INTERFACE down
-      ip link set $INTERFACE name eth1
-      ip link set eth1 up
-    fi
+      return 0
+    }
 
     myrepeat () {
         # Current time + 300 seconds (5 minutes)
@@ -1117,6 +1121,7 @@ cloudinit_write_files_common = <<EOT
         fi
     }
 
+    myrepeat myinit
     myrepeat myrename eth0
     myrepeat myrename eth1
 
