@@ -49,9 +49,18 @@ ${cloudinit_runcmd_common}
     echo "WARN: could not determine private interface for default route" >&2
   fi
 %{else~}
-# Standard setup: eth0 is public, configure both IPv4 and IPv6
-- [ip, route, add, default, via, '172.31.1.1', dev, 'eth0', metric, '100']
-- [ip, "-6", route, add, default, via, 'fe80::1', dev, 'eth0', metric, '100']
+# Standard setup: detect public interface dynamically (ARM uses enp7s0, x86 uses eth0)
+- |
+  route_dev() {
+    awk '{for(i=1;i<=NF;i++) if($i=="dev"){print $(i+1); exit}}'
+  }
+  PUB_IF=$(ip -4 route get 172.31.1.1 2>/dev/null | route_dev)
+  if [ -z "$PUB_IF" ]; then
+    # Fallback to eth0 if detection fails
+    PUB_IF="eth0"
+  fi
+  ip route add default via 172.31.1.1 dev "$PUB_IF" metric 100 2>/dev/null || true
+  ip -6 route add default via fe80::1 dev "$PUB_IF" metric 100 2>/dev/null || true
 %{endif~}
 
 %{if swap_size != ""~}
