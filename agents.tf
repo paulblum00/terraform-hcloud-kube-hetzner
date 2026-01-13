@@ -35,7 +35,8 @@ module "agents" {
   disable_ipv6                     = each.value.disable_ipv6
   ssh_bastion                      = local.ssh_bastion
   network_id                       = data.hcloud_network.k3s.id
-  private_ipv4                     = cidrhost(hcloud_network_subnet.agent[[for i, v in var.agent_nodepools : i if v.name == each.value.nodepool_name][0]].ip_range, each.value.index + (local.network_size >= 8 ? 101 : floor(local.subnet_size * 0.4)))
+  # Calculate IP offset based on subnet size (see control_planes.tf for explanation)
+  private_ipv4                     = cidrhost(hcloud_network_subnet.agent[[for i, v in var.agent_nodepools : i if v.name == each.value.nodepool_name][0]].ip_range, each.value.index + (local.subnet_size >= 7 ? 101 : floor(pow(2, local.subnet_size) * 0.75)))
 
   labels = merge(local.labels, local.labels_agent_node)
 

@@ -36,9 +36,10 @@ module "control_planes" {
   ssh_bastion                      = local.ssh_bastion
   network_id                       = data.hcloud_network.k3s.id
 
-  # We leave some room so 100 eventual Hetzner LBs that can be created perfectly safely
-  # It leaves the subnet with 254 x 254 - 100 = 64416 IPs to use, so probably enough.
-  private_ipv4 = cidrhost(hcloud_network_subnet.control_plane[[for i, v in var.control_plane_nodepools : i if v.name == each.value.nodepool_name][0]].ip_range, each.value.index + (local.network_size >= 8 ? 101 : floor(local.subnet_size * 0.4)))
+  # Calculate IP offset based on subnet size:
+  # - For large subnets (>=128 hosts, subnet_size>=7): use offset 101 to leave room for LBs
+  # - For small subnets: use offset at 75% of subnet to maximize usable IPs
+  private_ipv4 = cidrhost(hcloud_network_subnet.control_plane[[for i, v in var.control_plane_nodepools : i if v.name == each.value.nodepool_name][0]].ip_range, each.value.index + (local.subnet_size >= 7 ? 101 : floor(pow(2, local.subnet_size) * 0.75)))
 
   labels = merge(local.labels, local.labels_control_plane_node)
 
