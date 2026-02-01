@@ -313,6 +313,12 @@ module "kube-hetzner" {
   # Just note, that if Cilium with cilium_values, the responsibility of enabling of disabling Wireguard falls on you.
   # enable_wireguard = true
 
+  # Override the flannel backend directly (takes precedence over enable_wireguard).
+  # Valid values: vxlan (default), host-gw, wireguard-native
+  # Use wireguard-native for Robot nodes with vSwitch to avoid MTU auto-calculation issues.
+  # See https://docs.k3s.io/networking/basic-network-options for details.
+  # flannel_backend = "wireguard-native"
+
   # * LB location and type, the latter will depend on how much load you want it to handle, see https://www.hetzner.com/cloud/load-balancer
   load_balancer_type     = "lb11"
   load_balancer_location = "nbg1"
