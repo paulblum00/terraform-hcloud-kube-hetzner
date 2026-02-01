@@ -313,6 +313,12 @@ module "kube-hetzner" {
   # Just note, that if Cilium with cilium_values, the responsibility of enabling of disabling Wireguard falls on you.
   # enable_wireguard = true
 
+  # Override the flannel backend directly (takes precedence over enable_wireguard).
+  # Valid values: vxlan (default), host-gw, wireguard-native
+  # Use wireguard-native for Robot nodes with vSwitch to avoid MTU auto-calculation issues.
+  # See https://docs.k3s.io/networking/basic-network-options for details.
+  # flannel_backend = "wireguard-native"
+
   # * LB location and type, the latter will depend on how much load you want it to handle, see https://www.hetzner.com/cloud/load-balancer
   load_balancer_type     = "lb11"
   load_balancer_location = "nbg1"
@@ -429,7 +435,7 @@ module "kube-hetzner" {
   # Example:
   #
   # cluster_autoscaler_image = "registry.k8s.io/autoscaling/cluster-autoscaler"
-  # cluster_autoscaler_version = "v1.30.3"
+  # cluster_autoscaler_version = "v1.33.3"
   # cluster_autoscaler_log_level = 4
   # cluster_autoscaler_log_to_stderr = true
   # cluster_autoscaler_stderr_threshold = "INFO"
@@ -454,6 +460,33 @@ module "kube-hetzner" {
   #   "--ignore-daemonsets-utilization=true",
   #   "--enforce-node-group-min-size=true",
   # ]
+
+  # Cluster Autoscaler Deployment Configuration
+  #
+  # Configure the number of replicas and resource limits/requests for the cluster autoscaler deployment.
+  #
+  # cluster_autoscaler_replicas: Number of replicas for the cluster autoscaler deployment (default: 1)
+  #   - Setting this to > 1 enables HA for the autoscaler itself (uses leader election)
+  #
+  # cluster_autoscaler_resource_limits: Enable or disable resource limits/requests (default: true)
+  #   - Set to false to remove resource constraints entirely
+  #
+  # cluster_autoscaler_resource_values: Customize CPU and memory resources (defaults: 100m CPU, 300Mi memory for both requests and limits)
+  #
+  # Example:
+  #
+  # cluster_autoscaler_replicas = 2
+  # cluster_autoscaler_resource_limits = true
+  # cluster_autoscaler_resource_values = {
+  #   requests = {
+  #     cpu    = "100m"
+  #     memory = "300Mi"
+  #   }
+  #   limits = {
+  #     cpu    = "200m"
+  #     memory = "500Mi"
+  #   }
+  # }
 
   # Enable delete protection on compatible resources to prevent accidental deletion from the Hetzner Cloud Console.
   # This does not protect deletion from Terraform itself.
@@ -676,18 +709,19 @@ module "kube-hetzner" {
 
   # Allows you to specify the k3s version. If defined, supersedes initial_k3s_channel.
   # See https://github.com/k3s-io/k3s/releases for the available versions.
-  # install_k3s_version = "v1.30.2+k3s2"
+  # install_k3s_version = "v1.33.7+k3s1"
 
   # Allows you to specify either stable, latest, testing or supported minor versions.
   # see https://rancher.com/docs/k3s/latest/en/upgrades/basic/ and https://update.k3s.io/v1-release/channels
   # ⚠️ If you are going to use Rancher addons for instance, it's always a good idea to fix the kube version to one minor version below the latest stable,
-  #     e.g. v1.29 instead of the stable v1.30.
-  # The default is "v1.30".
+  #     e.g. v1.32 instead of the stable v1.33.
+  # The default is "v1.33".
   # initial_k3s_channel = "stable"
 
-  # Allows to specify the version of the System Upgrade Controller for automated upgrades of k3s
+  # Allows to specify the version of the System Upgrade Controller for automated upgrades of k3s.
+  # v0.15.0+ supports the 'window' parameter for scheduling upgrade times.
   # See https://github.com/rancher/system-upgrade-controller/releases for the available versions.
-  # sys_upgrade_controller_version = "v0.14.2"
+  # sys_upgrade_controller_version = "v0.18.0"
 
   # The cluster name, by default "k3s"
   # cluster_name = ""

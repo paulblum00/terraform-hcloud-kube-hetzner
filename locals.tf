@@ -555,7 +555,7 @@ locals {
   cni_k3s_settings = {
     "flannel" = {
       disable-network-policy = var.disable_network_policy
-      flannel-backend        = var.enable_wireguard ? "wireguard-native" : "vxlan"
+      flannel-backend        = var.flannel_backend != null ? var.flannel_backend : (var.enable_wireguard ? "wireguard-native" : "vxlan")
     }
     "calico" = {
       disable-network-policy = true

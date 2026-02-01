@@ -339,7 +339,7 @@ variable "cluster_autoscaler_image" {
 
 variable "cluster_autoscaler_version" {
   type        = string
-  default     = "v1.32.0"
+  default     = "v1.33.3"
   description = "Version of Kubernetes Cluster Autoscaler for Hetzner Cloud. Should be aligned with Kubernetes version. Available versions for the official image can be found at https://explore.ggcr.dev/?repo=registry.k8s.io%2Fautoscaling%2Fcluster-autoscaler."
 }
 
@@ -381,6 +381,47 @@ variable "cluster_autoscaler_server_creation_timeout" {
   type        = number
   default     = 15
   description = "Timeout (in minutes) until which a newly created server/node has to become available before giving up and destroying it."
+}
+
+variable "cluster_autoscaler_replicas" {
+  type        = number
+  default     = 1
+  description = "Number of replicas for the cluster autoscaler deployment. Multiple replicas use leader election for HA."
+
+  validation {
+    condition     = var.cluster_autoscaler_replicas >= 1 && floor(var.cluster_autoscaler_replicas) == var.cluster_autoscaler_replicas
+    error_message = "Number of cluster autoscaler replicas must be a positive integer."
+  }
+}
+
+variable "cluster_autoscaler_resource_limits" {
+  type        = bool
+  default     = true
+  description = "Should cluster autoscaler enable default resource requests and limits. Default values are requests: 100m & 300Mi and limits: 100m & 300Mi."
+}
+
+variable "cluster_autoscaler_resource_values" {
+  type = object({
+    requests = object({
+      cpu    = string
+      memory = string
+    })
+    limits = object({
+      cpu    = string
+      memory = string
+    })
+  })
+  default = {
+    requests = {
+      cpu    = "100m"
+      memory = "300Mi"
+    }
+    limits = {
+      cpu    = "100m"
+      memory = "300Mi"
+    }
+  }
+  description = "Requests and limits for Cluster Autoscaler."
 }
 
 variable "autoscaler_nodepools" {
@@ -686,11 +727,11 @@ variable "enable_metrics_server" {
 
 variable "initial_k3s_channel" {
   type        = string
-  default     = "v1.31" # Please update kube.tf.example too when changing this variable
+  default     = "v1.33" # Please update kube.tf.example too when changing this variable
   description = "Allows you to specify an initial k3s channel. See https://update.k3s.io/v1-release/channels for available channels."
 
   validation {
-    condition     = contains(["stable", "latest", "testing", "v1.16", "v1.17", "v1.18", "v1.19", "v1.20", "v1.21", "v1.22", "v1.23", "v1.24", "v1.25", "v1.26", "v1.27", "v1.28", "v1.29", "v1.30", "v1.31", "v1.32", "v1.33", "v1.34"], var.initial_k3s_channel)
+    condition     = contains(["stable", "latest", "testing", "v1.16", "v1.17", "v1.18", "v1.19", "v1.20", "v1.21", "v1.22", "v1.23", "v1.24", "v1.25", "v1.26", "v1.27", "v1.28", "v1.29", "v1.30", "v1.31", "v1.32", "v1.33", "v1.34", "v1.35"], var.initial_k3s_channel)
     error_message = "The initial k3s channel must be one of stable, latest or testing, or any of the minor kube versions like v1.26."
   }
 }
@@ -1220,6 +1261,17 @@ variable "enable_wireguard" {
   description = "Use wireguard-native as the backend for CNI."
 }
 
+variable "flannel_backend" {
+  type        = string
+  default     = null
+  description = "Override the flannel backend used by k3s. When set, this takes precedence over enable_wireguard. Valid values: vxlan, host-gw, wireguard-native. See https://docs.k3s.io/networking/basic-network-options for details. Use wireguard-native for Robot nodes with vSwitch to avoid MTU issues."
+
+  validation {
+    condition     = var.flannel_backend == null || contains(["vxlan", "host-gw", "wireguard-native"], var.flannel_backend)
+    error_message = "The flannel_backend must be one of: vxlan, host-gw, wireguard-native."
+  }
+}
+
 variable "control_planes_custom_config" {
   type        = any
   default     = {}
@@ -1345,8 +1397,8 @@ variable "keep_disk_cp" {
 
 variable "sys_upgrade_controller_version" {
   type        = string
-  default     = "v0.14.2"
-  description = "Version of the System Upgrade Controller for automated upgrades of k3s. See https://github.com/rancher/system-upgrade-controller/releases for the available versions."
+  default     = "v0.18.0"
+  description = "Version of the System Upgrade Controller for automated upgrades of k3s. v0.15.0+ supports the 'window' parameter for scheduling upgrades. See https://github.com/rancher/system-upgrade-controller/releases for available versions."
 }
 
 variable "hetzner_ccm_values" {
