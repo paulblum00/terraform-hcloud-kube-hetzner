@@ -30,7 +30,7 @@ A highly optimized, easy-to-use, auto-upgradable Kubernetes cluster powered by k
 <td width="50%" valign="top">
 
 **🤖 KH Assistant**<br>
-<a href="https://chatgpt.com/g/g-67df95cd1e0c8191baedfa3179061581-kh-assistant">Custom GPT</a> or <code>/kh-assistant</code> in <a href="https://docs.anthropic.com/en/docs/claude-code">Claude Code</a><br>
+<a href="https://chatgpt.com/g/g-67df95cd1e0c8191baedfa3179061581-kh-assistant">Custom GPT</a> or <code>/kh-assistant</code> skill in any <a href="https://agentskills.io">coding agent</a><br>
 AI-powered config generation & debugging!
 
 </td>
@@ -1100,9 +1100,9 @@ Update `version` in your kube.tf and run `terraform apply`.
 7. Push: `git push origin AmazingFeature`
 8. Open PR targeting `staging` branch
 
-### Claude Code Skills
+### Agent Skills
 
-This project includes [Claude Code](https://docs.anthropic.com/en/docs/claude-code) skills in `.claude/skills/` for contributors and maintainers:
+This project includes [agent skills](https://agentskills.io) in `.claude/skills/` — reusable workflows for any AI coding agent (Claude Code, Cursor, Windsurf, Codex, etc.):
 
 | Skill | Purpose |
 |-------|---------|
