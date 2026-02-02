@@ -285,6 +285,14 @@ variable "control_plane_nodepools" {
     )
     error_message = "Names in control_plane_nodepools must be unique."
   }
+  validation {
+    condition     = length(var.control_plane_nodepools) > 0
+    error_message = "At least one control plane nodepool is required. Kubernetes cannot run without control plane nodes."
+  }
+  validation {
+    condition     = length(var.control_plane_nodepools) == 0 || sum([for v in var.control_plane_nodepools : v.count]) >= 1
+    error_message = "At least one control plane node is required (total count across all control_plane_nodepools must be >= 1)."
+  }
 }
 
 variable "agent_nodepools" {
