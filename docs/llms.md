@@ -236,6 +236,16 @@ module "kube-hetzner" {
   * **Impact:** If changed, `cluster_ipv4_cidr` and `service_ipv4_cidr` must be sub-ranges within this new `network_ipv4_cidr`.
 
 ```terraform
+  # The amount of subnets into which the network will be split. Must be a power of 2.
+  # subnet_amount = 256
+```
+
+* **`subnet_amount` (Number, Optional):**
+  * **Default:** `256`.
+  * **Purpose:** Determines into how many subnets the `network_ipv4_cidr` is divided.
+  * **Constraint:** Must be a power of 2. Each nodepool (control plane and agent) and potentially the NAT router takes one subnet. Ensure this is large enough for your planned number of nodepools.
+
+```terraform
   # Using the default configuration you can only create a maximum of 42 agent-nodepools.
   # This is due to the creation of a subnet for each nodepool with CIDRs being in the shape of 10.[nodepool-index].0.0/16 which collides with k3s' cluster and service IP ranges (defaults below).
   # Furthermore the maximum number of nodepools (controlplane and agent) is 50, due to a hard limit of 50 subnets per network, see https://docs.hetzner.com/cloud/networks/faq/.
@@ -613,7 +623,17 @@ The example shows three control plane nodepools, each with one node, in differen
   * **CNI Compatibility:** The comment states it works with supported CNIs (Flannel, Calico, Cilium).
   * **Cilium Specifics:** If you are using `cni_plugin = "cilium"` and also providing custom `cilium_values`, you become responsible for enabling/configuring WireGuard within those `cilium_values` yourself, as your custom values would likely override the module's default Cilium WireGuard setup.
   * **Performance:** WireGuard is generally efficient, but encryption always has some performance overhead.
-    
+
+```terraform
+  # Override the flannel backend used by k3s. When set, this takes precedence over enable_wireguard.
+  # Valid values: vxlan, host-gw, wireguard-native.
+  # flannel_backend = "vxlan"
+```
+
+* **`flannel_backend` (String, Optional):**
+  * **Default:** `null` (defaults to `vxlan`, or `wireguard-native` if `enable_wireguard = true`).
+  * **Purpose:** Explicitly configures the backend for the Flannel CNI.
+  * **Robot Node Context:** For clusters involving Hetzner Robot nodes connected via vSwitch, `wireguard-native` is recommended to avoid MTU issues often seen with VXLAN in that topology.
 
 **Section 2.5: Load Balancer Configuration**
 
@@ -833,6 +853,14 @@ The example shows three control plane nodepools, each with one node, in differen
   * **`cluster_autoscaler_server_creation_timeout` (Number, Optional):**
     * **Default:** `15` (minutes).
     * **Purpose:** The maximum time (in minutes) the Cluster Autoscaler will wait for a newly provisioned node to become ready and join the cluster. If the timeout is exceeded, the autoscaler may assume the node provisioning failed and attempt to delete it and try again.
+  * **`cluster_autoscaler_replicas` (Number, Optional):**
+    * **Default:** `1`.
+    * **Purpose:** Sets the replica count for the Cluster Autoscaler deployment. Increase to >1 for high availability (leader election is supported).
+  * **`cluster_autoscaler_resource_limits` (Boolean, Optional):**
+    * **Default:** `true`.
+    * **Purpose:** Whether to apply resource requests/limits to the autoscaler pod.
+  * **`cluster_autoscaler_resource_values` (Map, Optional):**
+    * **Purpose:** Customizes the specific CPU and memory requests/limits for the autoscaler pod.
 
 ```terraform
   # Additional Cluster Autoscaler binary configuration
@@ -1087,6 +1115,21 @@ The example shows three control plane nodepools, each with one node, in differen
   * **Purpose:** Enables the integration of Hetzner Robot dedicated servers via the Cloud Controller Manager (CCM). This is only activated if `robot_user` and `robot_password` are also provided.
     * `true`: The HCCM is configured to allow connections to Robot Nodes.
     * `false`: The HCCM won't handle connections to Robot Nodes
+
+```terraform
+  # Hetzner Cloud vSwitch ID. If defined, a subnet will be created in the IP-range defined by vswitch_subnet_index.
+  # vswitch_id = 12345
+
+  # Subnet index (0-255) for vSwitch.
+  # vswitch_subnet_index = 201
+```
+
+* **`vswitch_id` (Number, Optional):**
+  * **Default:** `null`.
+  * **Purpose:** Links a Hetzner vSwitch to the private network. Required for hybrid setups with Robot servers.
+* **`vswitch_subnet_index` (Number, Optional):**
+  * **Default:** `201`.
+  * **Purpose:** Defines which subnet index (within the `subnet_amount` range) is assigned to the vSwitch connection.
 
 ```terraform
   # See https://github.com/hetznercloud/csi-driver/releases for the available versions.
@@ -2101,6 +2144,41 @@ Locked and loaded! Let's continue the detailed exploration.
     * The IP of the first control plane node (if no CP LB).
   * **Use Case:** If you've set up DNS Round Robin for your control plane nodes (as described for `additional_tls_sans`) and want your kubeconfig to use that hostname (e.g., `cp.cluster.my.org`) instead of a direct IP, or if you have a custom ingress setup.
   * **Requirement:** If you use a hostname here, ensure it resolves correctly and is included in the API server's TLS certificate SANs (via `additional_tls_sans` or default k3s behavior).
+
+```terraform
+  # Optional external control plane endpoint URL (e.g. https://myapi.domain.com:6443).
+  # Used as the k3s 'server' value for agents and secondary control planes.
+  # control_plane_endpoint = "https://myapi.domain.com:6443"
+```
+
+* **`control_plane_endpoint` (String, Optional):**
+  * **Default:** `null`.
+  * **Purpose:** Specifies a custom external URL for the Kubernetes API server.
+  * **Use Case:** When using an external load balancer (not managed by this module) or a specific DNS alias for your control plane, set this to ensure agents register correctly against that endpoint.
+
+```terraform
+  # K3S audit-policy.yaml contents. Used to configure Kubernetes audit logging.
+  # k3s_audit_policy_config = <<-EOT
+  #   apiVersion: audit.k8s.io/v1
+  #   kind: Policy
+  #   rules:
+  #   - level: Metadata
+  # EOT
+  # k3s_audit_log_path = "/var/log/k3s-audit/audit.log"
+  # k3s_audit_log_maxage = 30
+  # k3s_audit_log_maxbackup = 10
+  # k3s_audit_log_maxsize = 100
+```
+
+* **`k3s_audit_policy_config` (String, Optional):**
+  * **Purpose:** Defines the Kubernetes Audit Policy. If provided, k3s is configured to log audit events matching these rules.
+  * **Format:** YAML string content for the policy file.
+* **`k3s_audit_log_*` variables:**
+  * **Purpose:** Configure the rotation and retention of audit logs on control plane nodes.
+  * `k3s_audit_log_path`: Path to audit log file (default: `/var/log/k3s-audit/audit.log`)
+  * `k3s_audit_log_maxage`: Days to retain logs (default: `30`)
+  * `k3s_audit_log_maxbackup`: Number of backup files to keep (default: `10`)
+  * `k3s_audit_log_maxsize`: Max size in MB before rotation (default: `100`)
 
 ```terraform
   # lb_hostname Configuration:
