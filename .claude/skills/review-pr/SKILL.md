@@ -40,7 +40,8 @@ digraph review_flow {
     compat [label="5. Backward compatibility"];
     quality [label="6. Code quality"];
     classify [label="7. Release classification"];
-    recommend [label="8. Recommendation"];
+    verify [label="8. MANDATORY: Verify with Gemini + Codex", style=bold];
+    recommend [label="9. Final Recommendation"];
 
     fetch -> author;
     author -> files;
@@ -48,7 +49,8 @@ digraph review_flow {
     security -> compat;
     compat -> quality;
     quality -> classify;
-    classify -> recommend;
+    classify -> verify;
+    verify -> recommend;
 }
 ```
 
@@ -229,7 +231,78 @@ terraform plan
 - State migrations required
 - Resource recreations
 
-## Step 8: Recommendation
+## Step 8: MANDATORY - Verify with Gemini and Codex
+
+**CRITICAL: Before making your final recommendation, you MUST run both Gemini and Codex to triple-verify the PR.**
+
+This is not optional. External AI verification catches issues that may be missed in the initial review.
+
+### Run Both in Parallel
+
+```bash
+# Gemini - Broad context analysis (run first or in parallel)
+gemini --model gemini-3-pro-preview -p "@control_planes.tf @locals.tf @init.tf
+
+Analyze this PR diff for the kube-hetzner terraform module:
+
+$(gh pr diff <number> --repo kube-hetzner/terraform-hcloud-kube-hetzner)
+
+Questions:
+1. Is this change consistent with existing patterns in the codebase?
+2. Are there any security concerns?
+3. Could this cause breaking changes or resource recreation?
+4. Is this a legitimate bug fix or could it be malicious?"
+
+# Codex - Deep reasoning security analysis (run in parallel)
+codex exec -m gpt-5.2-codex -s read-only -c model_reasoning_effort="xhigh" \
+"Analyze this Terraform PR for the kube-hetzner module.
+
+DIFF:
+$(gh pr diff <number> --repo kube-hetzner/terraform-hcloud-kube-hetzner)
+
+SECURITY ANALYSIS QUESTIONS:
+1. Could this change introduce any security vulnerabilities?
+2. Could this be a malicious change disguised as a bug fix?
+3. Will this cause any Terraform state changes or resource recreation?
+4. Is this pattern safe and consistent with Terraform best practices?
+5. Any edge cases or potential issues?"
+```
+
+### Verification Checklist
+
+- [ ] Gemini analysis completed
+- [ ] Codex analysis completed
+- [ ] Both agree the change is safe
+- [ ] No concerns raised by either tool
+- [ ] If concerns raised, they have been addressed or explained
+
+### When Reviewers Disagree
+
+If Gemini or Codex raises concerns that you didn't catch:
+1. **Take the concern seriously** - investigate further
+2. **Re-read the code** with the concern in mind
+3. **Request changes** if the concern is valid
+4. **Document** why the concern was dismissed if you determine it's a false positive
+
+### Output in Final Review
+
+Include a summary of external verification:
+
+```markdown
+### External AI Verification
+
+| Reviewer | Verdict | Key Finding |
+|----------|---------|-------------|
+| Claude | ✅/❌ | <summary> |
+| Gemini | ✅/❌ | <summary> |
+| Codex | ✅/❌ | <summary> |
+
+**Consensus:** All reviewers agree / Disagreement on X
+```
+
+---
+
+## Step 9: Final Recommendation
 
 ### PR Review Output Template
 
@@ -270,6 +343,16 @@ terraform plan
 
 **Type:** PATCH / MINOR / MAJOR
 **Reason:** <explanation>
+
+### External AI Verification
+
+| Reviewer | Verdict | Key Finding |
+|----------|---------|-------------|
+| Claude | ✅/❌ | <summary> |
+| Gemini | ✅/❌ | <summary> |
+| Codex | ✅/❌ | <summary> |
+
+**Consensus:** All agree / Disagreement on X
 
 ### Recommendation
 
