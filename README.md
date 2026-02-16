@@ -1149,12 +1149,6 @@ Your sponsorship directly funds:
 
 Thanks to **[Hetzner](https://www.hetzner.com)** for supporting this project with cloud credits.
 
-- **[k-andy](https://github.com/StarpTech/k-andy)** — The starting point for this project
-- **[Best-README-Template](https://github.com/othneildrew/Best-README-Template)** — README inspiration
-- **[HashiCorp](https://www.hashicorp.com)** — The amazing Terraform framework
-- **[Rancher](https://www.rancher.com)** — k3s, the heart of this project
-- **[openSUSE](https://www.opensuse.org)** — MicroOS, next-level container OS
-
 ---
 
 <div align="center">
